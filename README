@@ -1,9 +1,13 @@
-Collection of scripts to help with converting a TRAC project when migrating from SVN to GIT
+Use this script if you have an existing trac project which has built up a history with svn and you have switched to git.
 
-createLookupTable.sh
-====================
-Used to create a table matching an SVN revision ID with a GIT hash. 
+This project will have tickets which reference svn revision numbers - but now the project needs git IDs instead.
 
-convertTracTickets.php
-=======================
-Converts all references to SVN changesets in TRAC tickets to GIT changesets. Be sure to run "trac-admin YourTracProject resync" after running this script.
+convertTracSvnToGit.sh will extract a list of git IDs annd svn revision numbers from the history created by git-svn - and pass these to convertTracTickets.php
+
+This will update the trac database - so that the links to commits still work.
+
+This code has worked for me - but I STRONGLY SUGGEST TAKING BACKUPS before starting.
+
+THIS CODE IS POTENTIALLY DESTRUCTIVE
+
+USE AT YOUR OWN RISK

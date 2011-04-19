@@ -15,13 +15,13 @@ error_reporting(E_ALL);
 /* CONFIGURATION */
 
 // Path to trac DB
-$pathDB = "/path/to/your/trac.db";
+$pathDB = "/var/www/trac-git/tracenv/db/trac.db";
 
 // Path to lookup table (SVN revision number to GIT revion hash)
 $pathLookupTable = "lookupTable.txt";
 
 // Number of characters for the changeset hash. This has to be 4 <= nr <= 40
-$nrHashCharacters = 8;
+$nrHashCharacters = 40;
 
 /* END CONFIGURATION */
 
@@ -109,7 +109,7 @@ while ($row = $result->fetchArray())
 	$description = $db->escapeString($row['description']);
 	if (convertSVNIDToGitID($description, $lookupTable, $nrHashCharacters))
 	{	
-		$query = "UPDATE ticket_change SET description='$description' WHERE id = " . $row['id'];
+		$query = "UPDATE ticket SET description='$description' WHERE id = " . $row['id'];
 		$db->exec($query);
 		
 		echo "Updated ticket $i\n";
