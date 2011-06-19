@@ -14,14 +14,17 @@ error_reporting(E_ALL);
 
 /* CONFIGURATION */
 
-// Path to trac DB
-$pathDB = "/var/www/trac-git/tracenv/db/trac.db";
+//Postgres database details
+//die("Please setup Postgres connection string and default schema");
+$pg_string = "host=localhost dbname=trac user=trac password=oLoP4Swa";
+$pg_schema = "cleanj";
+DEFINE("REPONAME", "");
 
 // Path to lookup table (SVN revision number to GIT revion hash)
 $pathLookupTable = "lookupTable.txt";
 
 // Number of characters for the changeset hash. This has to be 4 <= nr <= 40
-$nrHashCharacters = 40;
+$nrHashCharacters = 8;
 
 /* END CONFIGURATION */
 
@@ -50,6 +53,7 @@ function convertSVNIDToGitID(&$text, $lookupTable, $nrHashCharacters)
 			$gitID = substr($lookupTable[$svnID], 0, $nrHashCharacters);
 			
 			$text = str_replace('[' . $svnID . ']', '[' . $gitID . '] (SVN r' . $svnID . ')', $text);
+			$text = str_replace('#!CommitTicketReference repository="' . REPONAME .'" revision="' . $svnID .'"', '#!CommitTicketReference repository="' . REPONAME .'" revision="' . $gitID . '"', $text);
 		}
 		
 		return true;
@@ -69,26 +73,29 @@ foreach ($lines as $line)
 	$lookupTable[$svnID] = $gitID;
 }
 
-// Connect to the TRAC database
-$db = new SQLite3($pathDB);
+// Connect to the Postgres/TRAC database
+$db = pg_connect($pg_string);
+// Select schema
+pg_query("SET search_path TO '${pg_schema}'");
+
 
 echo "Converting table 'ticket_change'...\n";
 
 // Convert table 'ticket_change'
-$result = $db->query('SELECT * FROM ticket_change'); 
+$result = pg_query('SELECT * FROM ticket_change'); 
 
 $i = 1;
-while ($row = $result->fetchArray())
+while ($row = pg_fetch_array($result, null, PGSQL_ASSOC))
 {			
 	$i++;
-	$oldValue = $db->escapeString($row['oldvalue']);
-	$newValue = $db->escapeString($row['newvalue']);
+	$oldValue = pg_escape_string($row['oldvalue']);
+	$newValue = pg_escape_string($row['newvalue']);
 	
 	// Only update when there is something to be changed, since SQLite isn't the fastest beast around
 	if (convertSVNIDToGitID($oldValue, $lookupTable, $nrHashCharacters) || convertSVNIDToGitID($newValue, $lookupTable, $nrHashCharacters))
 	{	
 		$query = "UPDATE ticket_change SET oldvalue='$oldValue', newvalue='$newValue' WHERE ticket = '${row['ticket']}' AND time = '${row['time']}' AND author='${row['author']}' AND field='${row['field']}'";
-		if (!$db->exec($query))
+		if (!pg_query($query))
 		{
 			echo "Query failed: " . $query . "\n";
 		}		
@@ -101,16 +108,17 @@ echo "Converting table 'ticket'...\n";
 
 // Convert table 'ticket'
 
-$i = 1;
+$i = 0;
 
-$result = $db->query('SELECT * FROM ticket');
-while ($row = $result->fetchArray())
+$result = pg_query('SELECT * FROM ticket');
+while ($row = pg_fetch_array($result, null, PGSQL_ASSOC))
 {
-	$description = $db->escapeString($row['description']);
+	$i++;
+	$description = pg_escape_string($row['description']);
 	if (convertSVNIDToGitID($description, $lookupTable, $nrHashCharacters))
 	{	
 		$query = "UPDATE ticket SET description='$description' WHERE id = " . $row['id'];
-		$db->exec($query);
+		pg_query($query);
 		
 		echo "Updated ticket $i\n";
 	}

@@ -1,3 +1,15 @@
+h1. Introduction
+
+This is a fork of https://github.com/practicalweb/TRAC-SVN-to-GIT-migration which has been updated to work with PostgreSQL.
+Where does this differ from the original:
+* supports Trac 0.12 style commit message comments
+* scripts no longer chained
+* uses PostgreSQL
+
+h2. Main caveats
+Most git svn howto's add --no-metadata. When using this for the initial checkout for this script, there is no list of SVN revisions and it fails to extract the lookupTable of Git<->SVN commit id's
+
+h1.
 Use this script if you have an existing trac project which has built up a history with svn and you have switched to git.
 
 This project will have tickets which reference svn revision numbers - but now the project needs git IDs instead.
